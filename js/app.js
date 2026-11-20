@@ -328,7 +328,8 @@ function initHero() {
 
 /* ---------- 방명록 (Supabase REST, 미설정 시 브라우저 저장 데모) ---------- */
 const SB = window.OLIVE_SUPABASE || {}, sbOn = !!(SB.url && SB.anonKey);
-const sbHead = { apikey: SB.anonKey, Authorization: 'Bearer ' + SB.anonKey, 'Content-Type': 'application/json' };
+const sbHead = { apikey: SB.anonKey, 'Content-Type': 'application/json' };
+if (!String(SB.anonKey).startsWith('sb_')) sbHead.Authorization = 'Bearer ' + SB.anonKey; // 구형 anon(JWT) 키용
 const GB_SEED = [
   { id: -1, name: '서연', message: '린넨 셔츠 원피스 너무 편해요. 색감이 사진보다 더 예뻐요.', created_at: '2026-11-15T10:00:00Z' },
   { id: -2, name: 'Jiwon', message: '가을 에디토리얼 보고 코트 샀어요. 스타일링 제안이 좋아요!', created_at: '2026-11-12T10:00:00Z' },
