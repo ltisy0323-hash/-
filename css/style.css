@@ -389,6 +389,26 @@ svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.3;stroke
 .ed-body .ko{color:var(--khaki);margin-bottom:34px}
 .ed-body p{margin-bottom:16px;color:#4a4b44;font-size:15px;line-height:2}
 
+/* guestbook */
+.gb{display:grid;grid-template-columns:minmax(0,380px) minmax(0,1fr);gap:clamp(32px,6vw,96px);align-items:start}
+.gb-form{border:1px solid var(--line);padding:30px;background:rgba(247,244,236,.55)}
+.gb-form label{display:flex;justify-content:space-between;font-size:11.5px;letter-spacing:.18em;margin:0 0 6px}
+.gb-form label+input,.gb-form label+textarea{margin-bottom:18px}
+.gb-form label span{letter-spacing:.04em;color:var(--brown)}
+.gb-form input[type=text],.gb-form textarea{width:100%;padding:13px 14px;border:1px solid var(--line);background:var(--ivory);resize:vertical;transition:border-color .25s}
+.gb-form input:focus,.gb-form textarea:focus{outline:0;border-color:var(--green)}
+.gb-hp{position:absolute!important;left:-9999px!important;width:1px;height:1px;opacity:0}
+.gb-form .msg{margin:0 0 16px}
+.gb-form .btn:disabled{opacity:.6;cursor:wait}
+.gb-note{font-size:12px;color:var(--brown);margin-top:12px;text-align:center}
+.gb-item{padding:22px 0;border-bottom:1px solid var(--line)}
+.gb-item:first-child{padding-top:0}
+.gb-item header{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:6px}
+.gb-item b{font-family:var(--serif);font-size:21px;font-weight:500;color:var(--green);letter-spacing:.04em;overflow-wrap:anywhere}
+.gb-item time{font-size:12px;letter-spacing:.14em;color:var(--brown);flex:none}
+.gb-item p{color:#4a4b44;white-space:pre-wrap;overflow-wrap:anywhere}
+.gb-empty{color:var(--brown);padding:30px 0}
+
 /* reveal */
 .rv{opacity:0;transform:translateY(22px);transition:opacity .9s var(--ease),transform .9s var(--ease)}
 .rv.in{opacity:1;transform:none}
@@ -413,6 +433,7 @@ svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.3;stroke
   .about-im{min-height:0;height:min(120vw,520px)}
   .cartp{grid-template-columns:1fr;gap:30px}
   .cartp .sumbox{position:static}
+  .gb{grid-template-columns:minmax(0,1fr)}
   .values{grid-template-columns:repeat(2,1fr)}.values div:nth-child(2){border-right:0}.values div:nth-child(-n+2){border-bottom:1px solid var(--line)}
   .edi{gap:40px 16px}.edi a:nth-child(n){grid-column:span 12}
   .edi .im,.edi a:nth-child(n) .im{aspect-ratio:4/3.4}

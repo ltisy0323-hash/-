@@ -294,12 +294,19 @@ function pageHome() {
   <section class="sec beige"><div class="wrap"><div class="sec-h rv"><div><span class="k">OLIVE EDITORIAL</span><h2>Styling <em>Notes</em></h2><p>입는 방법까지 제안하는 OLIVE의 스타일 노트</p></div></div>
     <div class="edi rv">${EDITORIALS.map((e, i) => `<a href="#/editorial/${i}"><div class="im"><img src="${scene({ w: 900, h: i % 3 === 0 ? 760 : 1040, fx: .5, fs: .95, ...e.scene })}" alt="${e.title}" loading="lazy"></div><span class="no">0${i + 1}</span><h3>${e.title}</h3><p>${e.desc}</p></a>`).join('')}</div></div></section>
 
+  <section class="sec" id="guestbook"><div class="wrap"><div class="sec-h rv"><div><span class="k">GUESTBOOK</span><h2>Leave a <em>Note</em></h2><p>OLIVE에 남기고 싶은 이야기를 적어 주세요</p></div></div>
+    <div class="gb rv"><form class="gb-form" id="gbForm" novalidate><label for="gbName">NAME</label><input id="gbName" type="text" maxlength="20" placeholder="이름 또는 닉네임" autocomplete="off">
+      <label for="gbMsg">MESSAGE <span id="gbCount">0 / 200</span></label><textarea id="gbMsg" maxlength="200" rows="5" placeholder="따뜻한 한마디를 남겨 주세요"></textarea>
+      <input class="gb-hp" id="gbHp" type="text" tabindex="-1" autocomplete="off" aria-hidden="true">
+      <p class="msg" id="gbMsgBox" role="alert"></p><button class="btn block" type="submit" id="gbBtn">남기기</button><p class="gb-note" id="gbNote"></p></form>
+      <div class="gb-list"><div id="gbList" aria-live="polite"></div><div class="more" id="gbMore" style="margin-top:28px"></div></div></div></div></section>
+
   <section class="about" id="about-sec"><div class="about-im"><img src="${scene({ w: 900, h: 900, wall: '#E3D6BF', floor: '#C9B592', light: 1, curtain: 1, plant: 1, fx: .55, figs: [{ kind: 'dress', coat: '#D8C8AC', inner: '#D8C8AC', bottom: '#D8C8AC', hair: '#3E2F27' }] })}" alt="OLIVE 브랜드 이미지" loading="lazy"></div>
     <div class="about-tx rv"><span class="k">ABOUT OLIVE</span><h2>Wear Your Own <em>Nature.</em></h2><p class="lead">자연스러운 아름다움은 가장 오래도록 빛납니다.</p>
       <p>OLIVE는 특별한 날뿐만 아니라 평범한 일상에서도 자신만의 분위기를 만들어 갈 수 있는 옷을 제안합니다.</p>
       <p>편안함 속에 담긴 섬세한 디테일,<br>유행을 넘어 오래도록 함께할 수 있는 디자인.</p>
       <p>당신의 일상에 자연스럽게 스며드는 스타일, OLIVE입니다.</p><a class="btn ghost" href="#/about">BRAND STORY</a></div></section></div>`;
-  return { html, after: initHero };
+  return { html, after: () => { initHero(); initGuestbook(); } };
 }
 function setHero(i) {
   const h = $('#hero'); if (!h) return;
@@ -316,6 +323,55 @@ function initHero() {
   h.addEventListener('mouseleave', () => { setHero(heroIdx); $('#heroBar').style.animationPlayState = ''; });
   h.addEventListener('touchstart', e => sx = e.touches[0].clientX, { passive: true });
   h.addEventListener('touchend', e => { const d = e.changedTouches[0].clientX - sx; if (Math.abs(d) > 45) setHero(heroIdx + (d < 0 ? 1 : -1)); });
+}
+
+
+/* ---------- 방명록 (Supabase REST, 미설정 시 브라우저 저장 데모) ---------- */
+const SB = window.OLIVE_SUPABASE || {}, sbOn = !!(SB.url && SB.anonKey);
+const sbHead = { apikey: SB.anonKey, Authorization: 'Bearer ' + SB.anonKey, 'Content-Type': 'application/json' };
+const GB_SEED = [
+  { id: -1, name: '서연', message: '린넨 셔츠 원피스 너무 편해요. 색감이 사진보다 더 예뻐요.', created_at: '2026-11-15T10:00:00Z' },
+  { id: -2, name: 'Jiwon', message: '가을 에디토리얼 보고 코트 샀어요. 스타일링 제안이 좋아요!', created_at: '2026-11-12T10:00:00Z' },
+  { id: -3, name: '하나', message: '오래 입을 수 있는 옷이라 믿고 사요. 앞으로도 이 분위기 그대로 부탁드려요.', created_at: '2026-11-08T10:00:00Z' }
+];
+async function gbLoad() {
+  if (!sbOn) return store.get('guestbook', GB_SEED);
+  const r = await fetch(`${SB.url}/rest/v1/guestbook?select=id,name,message,created_at&order=created_at.desc&limit=100`, { headers: sbHead });
+  if (!r.ok) throw new Error('load ' + r.status);
+  return r.json();
+}
+async function gbSave(name, message) {
+  if (!sbOn) { const l = store.get('guestbook', GB_SEED); l.unshift({ id: Date.now(), name, message, created_at: new Date().toISOString() }); store.set('guestbook', l.slice(0, 100)); return; }
+  const r = await fetch(`${SB.url}/rest/v1/guestbook`, { method: 'POST', headers: { ...sbHead, Prefer: 'return=minimal' }, body: JSON.stringify({ name, message }) });
+  if (!r.ok) throw new Error('save ' + r.status);
+}
+function initGuestbook() {
+  const list = $('#gbList'); if (!list) return;
+  let items = [], shown = 6;
+  const fmt = d => { const t = new Date(d); return `${t.getFullYear()}.${String(t.getMonth() + 1).padStart(2, '0')}.${String(t.getDate()).padStart(2, '0')}`; };
+  const draw = () => {
+    list.innerHTML = items.length ? items.slice(0, shown).map(g => `<article class="gb-item"><header><b>${esc(g.name)}</b><time>${fmt(g.created_at)}</time></header><p>${esc(g.message)}</p></article>`).join('')
+      : '<p class="gb-empty">아직 남겨진 이야기가 없어요. 첫 번째 방명록을 남겨 주세요.</p>';
+    $('#gbMore').innerHTML = items.length > shown ? `<button class="btn ghost sm" id="gbMoreBtn">더 보기 (${shown}/${items.length})</button>` : '';
+    const b = $('#gbMoreBtn'); if (b) b.onclick = () => { shown += 6; draw(); };
+  };
+  const load = () => { list.innerHTML = '<p class="gb-empty">불러오는 중…</p>'; gbLoad().then(r => { items = r; draw(); }).catch(() => { list.innerHTML = '<p class="gb-empty">방명록을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.</p>'; }); };
+  $('#gbNote').textContent = sbOn ? '' : '데모 모드: 작성한 글은 이 브라우저에만 저장됩니다.';
+  $('#gbMsg').addEventListener('input', e => $('#gbCount').textContent = `${e.target.value.length} / 200`);
+  $('#gbForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    const name = $('#gbName').value.trim(), msg = $('#gbMsg').value.trim(), box = $('#gbMsgBox'), btn = $('#gbBtn');
+    const err = t => { box.textContent = t; box.classList.add('on'); };
+    if ($('#gbHp').value) return;
+    if (!name) return err('이름을 입력해 주세요.');
+    if (!msg) return err('메시지를 입력해 주세요.');
+    const last = store.get('gbLast', 0); if (Date.now() - last < 15000) return err('잠시 후 다시 남겨 주세요. (15초 간격)');
+    box.classList.remove('on'); btn.disabled = true; btn.textContent = '등록 중…';
+    try { await gbSave(name, msg); store.set('gbLast', Date.now()); $('#gbMsg').value = ''; $('#gbCount').textContent = '0 / 200'; toast('방명록이 등록되었습니다.'); items = await gbLoad(); shown = Math.max(shown, 6); draw(); }
+    catch { err('등록에 실패했습니다. 잠시 후 다시 시도해 주세요.'); }
+    btn.disabled = false; btn.textContent = '남기기';
+  });
+  load();
 }
 
 /* ---------- 페이지: 상품 목록 ---------- */
